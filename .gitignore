@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environment
+.env
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Debug logs
+llm_debug*.jsonl
+debug_log.txt
+debug_gemini.py
+failed_payload.json
+xss_test.log
+*.log
+
+# Reports (generated)
+*_report.md
+reports/
+
+# Browser driver cache
+.wdm/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Knowledge base (generated)
+~/.auton/
