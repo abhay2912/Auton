@@ -1,0 +1,4 @@
+# Auton v3 — Dependencies
+pydantic>=2.0
+pydantic-settings>=2.0
+claude-agent-sdk>=0.1.0
