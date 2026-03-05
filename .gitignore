@@ -23,9 +23,10 @@ failed_payload.json
 xss_test.log
 *.log
 
-# Reports (generated)
+# Reports & workspace (generated)
 *_report.md
 reports/
+workspace/
 
 # Browser driver cache
 .wdm/
