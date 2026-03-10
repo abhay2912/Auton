@@ -95,11 +95,13 @@ class ClaudeCodeBackend(AgentBackend):
         system_prompt: str,
         model: str,
         permission_mode: str = "bypassPermissions",
+        env_overrides: dict[str, str] | None = None,
     ) -> None:
         self._cwd = working_directory
         self._system_prompt = system_prompt
         self._model = model
         self._permission_mode = permission_mode
+        self._env_overrides = env_overrides or {}
         self._client: Any = None  # ClaudeSDKClient
         self._session_id: str | None = None
 
@@ -112,6 +114,7 @@ class ClaudeCodeBackend(AgentBackend):
             permission_mode=self._permission_mode,
             system_prompt=self._system_prompt,
             model=self._model,
+            env=self._env_overrides if self._env_overrides else None,
         )
 
         logger.info(f"Connecting to Claude Code CLI (model={self._model})...")
@@ -202,6 +205,7 @@ class ClaudeCodeBackend(AgentBackend):
             system_prompt=self._system_prompt,
             model=self._model,
             resume=session_id,
+            env=self._env_overrides if self._env_overrides else None,
         )
 
         self._client = ClaudeSDKClient(options=options)

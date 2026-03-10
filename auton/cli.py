@@ -2,7 +2,9 @@
 
 Usage:
     python -m auton scan https://example.com
-    python -m auton scan https://example.com --instruction "Focus on XSS in the search feature"
+    python -m auton scan https://example.com --proxy http://127.0.0.1:8080
+    python -m auton scan https://example.com --instruction "Focus on auth bypass"
+    python -m auton scan https://example.com --no-browser
     python -m auton resume <session_id>
     python -m auton sessions
 """
@@ -63,6 +65,16 @@ def create_parser() -> argparse.ArgumentParser:
         help="Maximum agent iterations (default: 200)",
     )
     scan_parser.add_argument(
+        "--proxy", "-p",
+        default=None,
+        help="HTTP proxy URL (e.g., http://127.0.0.1:8080 for Burp Suite)",
+    )
+    scan_parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Disable browser (use curl only)",
+    )
+    scan_parser.add_argument(
         "--verbose", "-v",
         action="store_true",
         help="Enable verbose/debug output",
@@ -102,10 +114,13 @@ async def cmd_scan(args: argparse.Namespace) -> None:
     print(f"\033[36m{'═' * 60}\033[0m")
     print(f"\033[36m  Auton v{__version__} — Autonomous Web Security Tester\033[0m")
     print(f"\033[36m{'═' * 60}\033[0m")
-    print(f"\033[36m  Target:\033[0m {args.target}")
-    print(f"\033[36m  Model:\033[0m  {args.model}")
+    print(f"\033[36m  Target:\033[0m  {args.target}")
+    print(f"\033[36m  Model:\033[0m   {args.model}")
+    if args.proxy:
+        print(f"\033[36m  Proxy:\033[0m   {args.proxy}")
+    print(f"\033[36m  Browser:\033[0m {'Disabled' if args.no_browser else 'Enabled'}")
     if args.instruction:
-        print(f"\033[36m  Note:\033[0m   {args.instruction}")
+        print(f"\033[36m  Note:\033[0m    {args.instruction}")
     print(f"\033[36m{'═' * 60}\033[0m")
     print()
 
@@ -114,6 +129,8 @@ async def cmd_scan(args: argparse.Namespace) -> None:
         llm_model=args.model,
         max_iterations=args.max_iterations,
         custom_instruction=args.instruction,
+        proxy=args.proxy,
+        browser_mode=not args.no_browser,
     )
 
     controller = AgentController(config)

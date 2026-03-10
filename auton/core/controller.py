@@ -146,11 +146,25 @@ class AgentController:
         if self.backend is None:
             from auton.prompts.pentesting import get_system_prompt
 
+            # Build environment overrides (proxy, etc.)
+            env_overrides: dict[str, str] = {}
+            if self.config.proxy:
+                env_overrides["HTTP_PROXY"] = self.config.proxy
+                env_overrides["HTTPS_PROXY"] = self.config.proxy
+                env_overrides["http_proxy"] = self.config.proxy
+                env_overrides["https_proxy"] = self.config.proxy
+                self._print_status(f"🔀 Proxy: {self.config.proxy}")
+
             self.backend = ClaudeCodeBackend(
                 working_directory=str(self.config.working_directory),
-                system_prompt=get_system_prompt(self.config.custom_instruction),
+                system_prompt=get_system_prompt(
+                    custom_instruction=self.config.custom_instruction,
+                    proxy_url=self.config.proxy,
+                    browser_mode=self.config.browser_mode,
+                ),
                 model=self.config.llm_model,
                 permission_mode=self.config.permission_mode,
+                env_overrides=env_overrides if env_overrides else None,
             )
 
         try:

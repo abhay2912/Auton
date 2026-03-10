@@ -56,9 +56,21 @@ class AutonConfig(BaseSettings):
         description="Additional instructions to append to system prompt",
     )
 
+    # === Proxy ===
+    proxy: str | None = Field(
+        default=None,
+        description="HTTP proxy URL (e.g., http://127.0.0.1:8080 for Burp Suite)",
+    )
+
+    # === Browser ===
+    browser_mode: bool = Field(
+        default=True,
+        description="Enable browser-based testing (Playwright). If False, uses curl only.",
+    )
+
     headless: bool = Field(
         default=False,
-        description="Run in headless mode (no TUI, CLI output only)",
+        description="Run browser in headless mode (no visible window)",
     )
 
     verbose: bool = Field(
