@@ -153,7 +153,10 @@ class AgentController:
                 env_overrides["HTTPS_PROXY"] = self.config.proxy
                 env_overrides["http_proxy"] = self.config.proxy
                 env_overrides["https_proxy"] = self.config.proxy
-                self._print_status(f"🔀 Proxy: {self.config.proxy}")
+                # Burp Suite intercepts TLS with its own cert —
+                # Claude Code SDK (Node.js) must accept it
+                env_overrides["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
+                self._print_status(f"🔀 Proxy: {self.config.proxy} (TLS verification disabled)")
 
             self.backend = ClaudeCodeBackend(
                 working_directory=str(self.config.working_directory),
