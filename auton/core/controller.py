@@ -156,6 +156,20 @@ class AgentController:
                 # Burp Suite intercepts TLS with its own cert —
                 # Claude Code SDK (Node.js) must accept it
                 env_overrides["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
+                # CRITICAL: Exclude Anthropic API from proxy so the SDK's
+                # own connection doesn't get routed through Burp (which
+                # breaks the WebSocket/streaming connection silently).
+                # Only curl/browser/python spawned by Claude go through proxy.
+                env_overrides["NO_PROXY"] = (
+                    "api.anthropic.com,"
+                    "anthropic.com,"
+                    "claude.ai,"
+                    "*.anthropic.com,"
+                    "*.claude.ai,"
+                    "sentry.io,"          # SDK telemetry
+                    "statsigapi.net"      # SDK feature flags
+                )
+                env_overrides["no_proxy"] = env_overrides["NO_PROXY"]
                 self._print_status(f"🔀 Proxy: {self.config.proxy} (TLS verification disabled)")
 
             self.backend = ClaudeCodeBackend(
